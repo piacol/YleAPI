@@ -1,0 +1,29 @@
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2008
+
+Project("{04801660-4295-3A5F-7775-1944F35FE92E}") = "YleAPI", "Assembly-CSharp.csproj", "{FA5EC3E2-20D4-F2AA-1785-77FFE56BF554}"
+EndProject
+Project("{04801660-4295-3A5F-7775-1944F35FE92E}") = "YleAPI", "Assembly-CSharp-Editor.csproj", "{C80E0EED-426A-499B-BC85-5CC86EA6516D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{FA5EC3E2-20D4-F2AA-1785-77FFE56BF554}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FA5EC3E2-20D4-F2AA-1785-77FFE56BF554}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FA5EC3E2-20D4-F2AA-1785-77FFE56BF554}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FA5EC3E2-20D4-F2AA-1785-77FFE56BF554}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C80E0EED-426A-499B-BC85-5CC86EA6516D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C80E0EED-426A-499B-BC85-5CC86EA6516D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C80E0EED-426A-499B-BC85-5CC86EA6516D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C80E0EED-426A-499B-BC85-5CC86EA6516D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(MonoDevelopProperties) = preSolution
+		StartupItem = Assembly-CSharp.csproj
+	EndGlobalSection
+EndGlobal
