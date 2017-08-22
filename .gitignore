@@ -1,4 +1,8 @@
 Library/
 Temp/
 obj/
+*.sln
+*.userprefs
+*.csproj
+
 
