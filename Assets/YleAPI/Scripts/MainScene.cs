@@ -185,40 +185,6 @@ namespace YleAPI
 
             return plainString;
 
-            //AE_S128 복호화
-
-
-            /*
-            RijndaelManaged aesEncryption = new RijndaelManaged();            
-            aesEncryption.BlockSize = 128;
-            aesEncryption.KeySize = 256;
-
-            //aesEncryption.Mode = CipherMode.CBC;
-            aesEncryption.Padding = PaddingMode.None;
-
-            string keyStr = encryptedURL;//"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
-            string ivStr = encryptedURL;//"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";           
-
-            byte[] ivArr = Convert.FromBase64String(ivStr);
-            byte[] IVkey16BytesValue = new byte[16];
-            Array.Copy(ivArr, IVkey16BytesValue, 16);
-
-            byte[] keyArr = Convert.FromBase64String(keyStr);
-            byte[] KeyArr32BytesValue = new byte[32];
-            Array.Copy(keyArr, KeyArr32BytesValue, 32);
-
-            aesEncryption.IV = IVkey16BytesValue;
-            aesEncryption.Key = KeyArr32BytesValue;
-            //aesEncryption.Key = ASCIIEncoding.ASCII.GetBytes(keyStr);
-            //aesEncryption.IV = ASCIIEncoding.ASCII.GetBytes(ivStr);
-
-            ICryptoTransform decrypto = aesEncryption.CreateDecryptor();
-
-            byte[] encryptedBytes = Convert.FromBase64CharArray(encryptedURL.ToCharArray(), 0, encryptedURL.Length);
-            byte[] decryptedData = decrypto.TransformFinalBlock(encryptedBytes, 0, encryptedBytes.Length); 
-            return ASCIIEncoding.UTF8.GetString(decryptedData);
-            */
-
             /*            
                 String secret = "this_is_your_secret";
                 String data = "this_is_the_url";
