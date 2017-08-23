@@ -46,15 +46,27 @@ namespace YleAPI.Net
 			List<ProgramInfo> result = new List<ProgramInfo> ();
 			int programCount = 0;
 
+            var list = GetPrograms(keyword, ref offset, ref programCount);
+
+            Debug.Log("(offset)" + offset + "(programCount)" + programCount);
+
+            if(programCount == Constants.MaxProgramSearchCount)
+            {
+                
+            }
+
 			return result;
 		}
 
 		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int programCount)
-		{
+		{            
 			List<ProgramInfo> result = new List<ProgramInfo> ();
 			string strUri = "https://external.api.yle.fi/v1/programs/items.json?";
 			_sb.Length = 0;
 			_sb.Append (strUri);
+            _sb.Append ("q=");
+            _sb.Append (keyword);
+            _sb.Append ('&');
 			_sb.Append ("offset=");
 			_sb.Append (offset);
 			_sb.Append ('&');
@@ -84,27 +96,22 @@ namespace YleAPI.Net
 				JSONObject title = program ["title"];
 				JSONObject description = program ["description"];
 				JSONObject longDescription = program ["longDescription"];
-
-				if(title["fi"].str.Contains(keyword) == false &&
-					description["fi"].str.Contains(keyword) == false &&
-					longDescription["fi"].str.Contains(keyword) == false)
-				{
-					continue;
-				}	
-
-				/*
-				JSONObject image = program ["image"];
-				if (image != null) 
-				{					
-					Debug.Log ("(index)" + index + "(type)" + program ["type"] + "(title)" + title.ToString() + "(id)" + program ["id"] + "(image)" + image.ToString ());
-				}
-				*/
-
 				ProgramInfo newInfo = new ProgramInfo ();
 
-				newInfo.title = title ["fi"].str;
-				newInfo.description = description ["fi"].str;
-				newInfo.longDescription = longDescription ["fi"].str;
+                if(title != null)
+                {
+				    newInfo.title = title ["fi"].str;
+                }
+
+                if(description != null)
+                {
+				    newInfo.description = description ["fi"].str;
+                }
+
+                if(longDescription != null)
+                {
+				    newInfo.longDescription = longDescription ["fi"].str;
+                }
 
 				result.Add (newInfo);
 
