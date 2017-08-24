@@ -89,6 +89,8 @@ namespace YleAPI.Net
 				JSONObject longDescription = program ["longDescription"];
 				ProgramInfo newInfo = new ProgramInfo ();
 
+				newInfo.id = program ["id"].str;
+
                 if(title != null &&
 					title ["fi"] != null) 
                 {
@@ -120,8 +122,9 @@ namespace YleAPI.Net
 			return result;
 		}
 
-		public void GetProgramDetailsByID(ref string result, string id)
+		public ProgramDetailsInfo GetProgramDetailsByID(string id)
 		{
+			ProgramDetailsInfo result = new ProgramDetailsInfo();
 			string strUri = "https://external.api.yle.fi/v1/programs/items/";
 
 			_sb.Length = 0;
@@ -130,7 +133,34 @@ namespace YleAPI.Net
 			_sb.Append (".json?");
 			_sb.Append (_authInfo);
 
-			RequestAndResponse (ref result, _sb.ToString ());
+			string resultString = null;
+			RequestAndResponse (ref resultString, _sb.ToString ());
+
+			JSONObject jsonResult = new JSONObject (resultString);
+			JSONObject jsonData = jsonResult ["data"];
+			JSONObject title = jsonData ["title"];
+			JSONObject description = jsonData ["description"];
+			JSONObject longDescription = jsonData ["longDescription"];
+
+			if(title != null &&
+				title ["fi"] != null) 
+			{
+				result.title = title ["fi"].str;
+			}
+
+			if(description != null &&
+				description ["fi"] != null) 
+			{
+				result.description = description ["fi"].str;
+			}
+
+			if(longDescription != null &&
+				longDescription ["fi"] != null)
+			{					
+				result.longDescription = longDescription ["fi"].str;
+			}
+
+			return result;
 		}
 
 		/*

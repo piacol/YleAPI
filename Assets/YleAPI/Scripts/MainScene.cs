@@ -8,6 +8,7 @@ namespace YleAPI
 {
 	public class ProgramInfo
 	{
+		public string id;
 		public string title;
 		public string description;
 		public string longDescription;
@@ -15,11 +16,14 @@ namespace YleAPI
 
 	public class ProgramDetailsInfo
 	{
-		
+		public string title;
+		public string description;
+		public string longDescription;
 	}
 
 	public class MainScene : MonoBehaviour 
 	{
+		public UISearchInputView uiSearchInputView;
 		public UISearchProgramView uiSearchProgramView;
 		public UIProgramView uiProgramView;
 		
@@ -28,6 +32,7 @@ namespace YleAPI
 		private int _offset;
 		private int _metaCount;
 		private List<ProgramInfo> _programInfos = new List<ProgramInfo>();
+		private ProgramDetailsInfo _programDetailsInfo;
 		
 		void Awake()
 		{
@@ -35,7 +40,9 @@ namespace YleAPI
 		}
 		
 		void Start()
-		{	
+		{
+			ShowSearchView (true);
+			ShowProgramView (false);	
 		}
 
 		public void InitProgramInfos(string keyword)
@@ -65,6 +72,33 @@ namespace YleAPI
 			_programInfos.AddRange(programInfos);
 
 			uiSearchProgramView.AppendView (programInfos);
+		}
+
+		private void ShowSearchView(bool show)
+		{
+			uiSearchInputView.gameObject.SetActive (show);
+			uiSearchProgramView.gameObject.SetActive (show);
+		}
+
+		private void ShowProgramView(bool show)
+		{
+			uiProgramView.gameObject.SetActive (show);
+		}
+
+		public void UpdateProgramDetailsInfo(string programID)
+		{
+			ShowSearchView (false);
+			ShowProgramView (true);
+
+			_programDetailsInfo = _netClient.GetProgramDetailsByID (programID);
+
+			uiProgramView.UpdateView (_programDetailsInfo);
+		}
+
+		public void OnProgramViewBackButtonClick()
+		{
+			ShowSearchView (true);
+			ShowProgramView (false);			
 		}
 	}
 }
