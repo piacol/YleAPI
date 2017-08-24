@@ -189,7 +189,9 @@ namespace YleAPI.Net
                 result.longDescription = ReplaceString(longDescription ["fi"].str);
 			}
 
-            if(image != null)
+            if(image != null &&
+                image.Count > 0 &&
+                image["id"] != null)
             {
                 string imageFormat = "jpg";
                 string imageUrl = string.Format("http://images.cdn.yle.fi/image/upload/{0}.{1}", image["id"].str, imageFormat);
