@@ -2,13 +2,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using YleAPI;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace YleAPI.UI
 {
-	public class UISearchProgramView : MonoBehaviour 
+	public class UISearchProgramView : MonoBehaviour, IEndDragHandler
 	{
-		public GameObject programListItemParent;
-		public GameObject programListItemPrefab;
+		public MainScene parent;
+		public GameObject searchProgramItemParent;
+		public GameObject searchProgramItemPrefab;
+		public ScrollRect scrollRect;
+		public Scrollbar scrollbar;
 
 		private List<UISearchProgramItem> searchProgramItems = new List<UISearchProgramItem>();
 
@@ -18,15 +23,17 @@ namespace YleAPI.UI
 
 		void Start()
 		{			
+			scrollbar.gameObject.SetActive (false);
 		}
 
 		public void UpdateView(List<ProgramInfo> programInfos)
 		{
 			searchProgramItems.Clear ();
+			scrollbar.value = 1;
 
-			while (programListItemParent.transform.childCount > 0) 
+			foreach (Transform child in searchProgramItemParent.transform) 
 			{
-				Destroy (programListItemParent.transform.GetChild (0));
+				GameObject.Destroy (child.gameObject);
 			}
 
 			AppendView (programInfos);
@@ -36,26 +43,40 @@ namespace YleAPI.UI
 		{
 			int startIndex = searchProgramItems.Count;
 
-			if (programListItemPrefab != null) 
+			if (searchProgramItemPrefab != null) 
 			{
 				for(int i = 0; i < programInfos.Count; i++) 
 				{					
-					GameObject go = GameObject.Instantiate (programListItemPrefab);
+					GameObject go = GameObject.Instantiate (searchProgramItemPrefab);
 
 					if (go != null) 
 					{					
 						UISearchProgramItem item = go.GetComponent<UISearchProgramItem> ();
-						item.transform.SetParent (programListItemParent.transform);
+						item.transform.SetParent (searchProgramItemParent.transform);
 						searchProgramItems.Add (item);
 					}
 				}
 			}
 
-			for (int i = startIndex; i < searchProgramItems.Count; ++i) 
+			for (int i = 0; i < programInfos.Count; ++i) 
 			{
-				var item = searchProgramItems [i];
+				var item = searchProgramItems [i + startIndex];
 
-				item.uiTitle.text = programInfos [i].title;
+				int number = i + startIndex + 1;
+
+				item.uiTitle.text = "(" + number + ")" + programInfos [i].title;
+			}
+
+			bool scrollbarActive = searchProgramItems.Count > 0 ? true : false;
+
+			scrollbar.gameObject.SetActive (scrollbarActive);
+		}
+
+		public void OnEndDrag(PointerEventData data)
+		{	
+			if (scrollbar.value == 0) 
+			{
+				parent.AppendProgramInfos ();
 			}
 		}
 	}

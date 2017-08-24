@@ -6,9 +6,9 @@ namespace YleAPI.UI
 {
 	public class UISearchInputView : MonoBehaviour 
 	{
+		public MainScene parent;
 		public InputField uiSearchInputField;
 		public Button uiSearchButton;
-		public MainScene parent;
 
 		void Awake()
 		{
