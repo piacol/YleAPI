@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace YleAPI.UI
 {
-	public class UIProgramListItem : MonoBehaviour 
+	public class UISearchProgramItem : MonoBehaviour 
 	{
 		public Text uiTitle;
 

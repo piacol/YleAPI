@@ -8,6 +8,7 @@ namespace YleAPI.UI
 	{
 		public InputField uiSearchInputField;
 		public Button uiSearchButton;
+		public MainScene parent;
 
 		void Awake()
 		{
@@ -15,8 +16,13 @@ namespace YleAPI.UI
 		}
 
 		private void OnSearchButtonClick()
-		{			
-			Debug.Log ("(uiSearchInputField.text)" + uiSearchInputField.text);
+		{	
+			if (string.IsNullOrEmpty (uiSearchInputField.text) == true) 
+			{
+				return;
+			}
+
+			parent.InitProgramInfos (uiSearchInputField.text);
 		}
 	}
 }

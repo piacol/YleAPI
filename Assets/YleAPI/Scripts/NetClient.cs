@@ -24,41 +24,23 @@ namespace YleAPI.Net
 			_authInfo = string.Format("app_id={0}&app_key={1}", _appID, _appKey);
 		}
 
-		/*
-		public void Init()
-		{			
-			//string result = null;
-			//string programID = "1-2883110";
-			//GetProgramDetailsByID (ref result, programID);
-
-			//string resultPrograms = null;
-			//GetPrograms (ref resultPrograms);
-
-			//string resultServices = null;
-			//GetServices (ref resultServices, "radiochannel");
-
-			//string resultService = null;
-			//GetService (ref resultService, "yle-radio-1");
-		}
-		*/
-		public List<ProgramInfo> GetPrograms(string keyword, ref int offset)
+		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int metaCount, int maxSearchCount = Constants.MaxSearchProgramCount)
 		{
 			List<ProgramInfo> result = new List<ProgramInfo> ();
-			int programCount = 0;
+			int searchCount = 0;
 
-            var list = GetPrograms(keyword, ref offset, ref programCount);
+			do
+			{
+				var list = GetPrograms(keyword, ref offset, ref metaCount, ref searchCount, maxSearchCount);
 
-            Debug.Log("(offset)" + offset + "(programCount)" + programCount);
+				result.AddRange(list);
 
-            if(programCount == Constants.MaxProgramSearchCount)
-            {
-                
-            }
+			} while(offset < metaCount && searchCount < maxSearchCount);
 
 			return result;
 		}
 
-		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int programCount)
+		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int metaCount, ref int searchCount, int maxSearchCount)
 		{            
 			List<ProgramInfo> result = new List<ProgramInfo> ();
 			string strUri = "https://external.api.yle.fi/v1/programs/items.json?";
@@ -70,24 +52,33 @@ namespace YleAPI.Net
 			_sb.Append ("offset=");
 			_sb.Append (offset);
 			_sb.Append ('&');
-			_sb.Append ("category=5-135&");
+			//_sb.Append ("category=5-135&");
 			_sb.Append ("availability=ondemand&"); // available
 			_sb.Append ("contentprotection=22-0,22-1&"); // exclude drm protected
 			_sb.Append ("region=world&"); // exclude fi region
+			_sb.Append ("language=fi&"); // exclude fi region
 			_sb.Append (_authInfo);
-			Debug.Log (_sb.ToString ());
+			//Debug.Log (_sb.ToString ());
 
 			string resultString = null;
 			RequestAndResponse (ref resultString, _sb.ToString ());
 
 			JSONObject jsonResult = new JSONObject (resultString);
+			JSONObject jsonMeta = jsonResult ["meta"];
+			metaCount = (int)jsonMeta ["count"].i;
+			int limit = (int)jsonMeta ["limit"].i;
 			JSONObject jsonData = jsonResult ["data"];
 			List<JSONObject> jsonPrograms = jsonData.list;
 
-			foreach (var program in jsonPrograms) 
-			{	
-				offset++;
+			if (jsonPrograms.Count == 0) 
+			{
+				offset += limit;
+			}
 
+			foreach (var program in jsonPrograms) 
+			{
+				offset++;
+				
 				if (IsValidSubject (program ["subject"]) == false) 
 				{
 					continue;
@@ -98,26 +89,29 @@ namespace YleAPI.Net
 				JSONObject longDescription = program ["longDescription"];
 				ProgramInfo newInfo = new ProgramInfo ();
 
-                if(title != null)
+                if(title != null &&
+					title ["fi"] != null) 
                 {
-				    newInfo.title = title ["fi"].str;
+					newInfo.title = title ["fi"].str;
                 }
 
-                if(description != null)
+                if(description != null &&
+					description ["fi"] != null) 
                 {
-				    newInfo.description = description ["fi"].str;
+					newInfo.description = description ["fi"].str;
                 }
 
-                if(longDescription != null)
-                {
-				    newInfo.longDescription = longDescription ["fi"].str;
+                if(longDescription != null &&
+					longDescription ["fi"] != null)
+                {					
+					newInfo.longDescription = longDescription ["fi"].str;
                 }
 
 				result.Add (newInfo);
 
-				programCount++;
+				searchCount++;
 
-				if (programCount == Constants.MaxProgramSearchCount) 
+				if (searchCount >= maxSearchCount) 
 				{
 					break;
 				}
@@ -139,6 +133,7 @@ namespace YleAPI.Net
 			RequestAndResponse (ref result, _sb.ToString ());
 		}
 
+		/*
 		public void GetService(ref string result, string serviceID)
 		{
 			string strUri = "https://external.api.yle.fi/v1/programs/services/";
@@ -153,8 +148,9 @@ namespace YleAPI.Net
 
 			JSONObject jsonResult = new JSONObject (result);
 
-			Debug.Log (jsonResult.ToString ());
+			//Debug.Log (jsonResult.ToString ());
 		}
+		*/
 
 		public void GetServices(ref string result, string serviceType)
 		{
@@ -166,7 +162,7 @@ namespace YleAPI.Net
 			_sb.Append ("&");
 			_sb.Append (_authInfo);
 
-			Debug.Log (_sb.ToString ());
+			//Debug.Log (_sb.ToString ());
 
 			RequestAndResponse (ref result, _sb.ToString ());
 
@@ -235,7 +231,7 @@ namespace YleAPI.Net
 			StreamReader reader = new StreamReader(dataStream, Encoding.UTF8);
 
 			result = reader.ReadToEnd();
-			Debug.Log ("(Response)" + result);
+			Debug.Log ("(RequestAndResponse() - )" + result);
 
 			reader.Close ();
 			response.Close ();

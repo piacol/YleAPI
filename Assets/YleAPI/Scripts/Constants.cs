@@ -5,8 +5,8 @@ namespace YleAPI
 {
 	public class Constants
 	{
-		public const int MaxProgramListItems = 10;
-		public const int MaxProgramSearchCount = 10;
+		public const int MaxSearchProgramItemCount = 10;
+		public const int MaxSearchProgramCount = 10;
 	}
 }
 

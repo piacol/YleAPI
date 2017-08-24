@@ -2,6 +2,7 @@
 using System.Collections;	
 using System.Collections.Generic;	
 using YleAPI.Net;
+using YleAPI.UI;
 
 namespace YleAPI
 {
@@ -19,9 +20,13 @@ namespace YleAPI
 
 	public class MainScene : MonoBehaviour 
 	{
+		public UISearchProgramView uiSearchProgramView;
+		public UIProgramView uiProgramView;
+		
 		private NetClient _netClient;
 		private string _keyword;
-		private int _currentOffset;
+		private int _offset;
+		private int _metaCount;
 		private List<ProgramInfo> _programInfos = new List<ProgramInfo>();
 		
 		void Awake()
@@ -30,24 +35,36 @@ namespace YleAPI
 		}
 		
 		void Start()
-		{			
-			InitProgramInfos ("hero");
+		{	
 		}
 
-		private void InitProgramInfos(string keyword)
+		public void InitProgramInfos(string keyword)
 		{			
 			_keyword = keyword;
-			_currentOffset = 0;
+			_offset = 0;
+			_metaCount = 0;
 
 			_programInfos.Clear ();
 
-			var programInfos = _netClient.GetPrograms (_keyword, ref _currentOffset);
+			var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
 
 			_programInfos.AddRange(programInfos);
+
+			uiSearchProgramView.UpdateView (_programInfos);
 		}
 
-		private void AppendProgramInfos()
+		public void AppendProgramInfos()
 		{
+			if (_offset == _metaCount) 
+			{
+				return;
+			}
+
+			var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
+
+			_programInfos.AddRange(programInfos);
+
+			uiSearchProgramView.AppendView (programInfos);
 		}
 	}
 }
