@@ -5,8 +5,7 @@ using UnityEngine.UI;
 namespace YleAPI.UI
 {
 	public class UISearchProgramItem : MonoBehaviour 
-	{
-		public MainScene parent;
+	{		
 		public Button uiButton;
 		public Text uiTitle;
 
@@ -19,7 +18,7 @@ namespace YleAPI.UI
 
 		private void OnButtonClick()
 		{
-			parent.UpdateProgramDetailsInfo (_programID);
+			MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchProgramItemClick, _programID);
 		}
 
 		public void SetProgramID(string id)

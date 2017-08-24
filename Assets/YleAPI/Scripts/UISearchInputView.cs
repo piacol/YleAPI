@@ -5,8 +5,7 @@ using UnityEngine.UI;
 namespace YleAPI.UI
 {
 	public class UISearchInputView : MonoBehaviour 
-	{
-		public MainScene parent;
+	{		
 		public InputField uiSearchInputField;
 		public Button uiSearchButton;
 
@@ -22,7 +21,7 @@ namespace YleAPI.UI
 				return;
 			}
 
-			parent.InitProgramInfos (uiSearchInputField.text);
+            MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchButtonClick, uiSearchInputField.text);			
 		}
 	}
 }

@@ -5,11 +5,11 @@ using System.Collections;
 namespace YleAPI.UI
 {
 	public class UIProgramView : MonoBehaviour 
-	{
-		public MainScene parent;
+	{		
 		public Button uiBackButton;
-		public Text uiTitle;
-		public RawImage uiImage;
+		public Text uiTitle1;
+        public Text uiTitle2;
+		public Image uiImage;
 		public Text uiDescription;
 		public Scrollbar uiScrollbar;
 
@@ -29,14 +29,36 @@ namespace YleAPI.UI
 		{			
 			uiScrollbar.value = 1;
 
-			if (uiTitle != null) 
+			if (uiTitle1 != null) 
 			{
-				uiTitle.text = info.title;
+                if(info.title1 != null)
+                {
+                    uiTitle1.gameObject.SetActive(true);
+
+				    uiTitle1.text = info.title1;
+                }
+                else
+                {
+                    uiTitle1.gameObject.SetActive(false);
+                }
 			}
+
+            if (uiTitle2 != null) 
+            {
+                uiTitle2.text = info.title2;
+            }
 
 			if (uiImage != null) 
 			{		
-				uiImage.gameObject.SetActive (false);
+                if(info.sprite != null)
+                {
+                    uiImage.gameObject.SetActive (true);
+                    uiImage.sprite = info.sprite;
+                }
+                else
+                {
+				    uiImage.gameObject.SetActive (false);
+                }
 			}
 
 			if (uiDescription != null) 
@@ -47,7 +69,7 @@ namespace YleAPI.UI
 
 		private void OnBackButtonClick()
 		{
-			parent.OnProgramViewBackButtonClick ();
+            MessageObjectManager.Instance.SendMessageToAll(eMessage.ProgramViewBackButtonClick);
 		}
 	}
 }

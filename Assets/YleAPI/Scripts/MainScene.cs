@@ -16,12 +16,14 @@ namespace YleAPI
 
 	public class ProgramDetailsInfo
 	{
-		public string title;
+        public string title1;      
+		public string title2;
 		public string description;
 		public string longDescription;
+        public Sprite sprite;
 	}
 
-	public class MainScene : MonoBehaviour 
+	public class MainScene : MonoBehaviour, IMessageObject
 	{
 		public UISearchInputView uiSearchInputView;
 		public UISearchProgramView uiSearchProgramView;
@@ -33,9 +35,45 @@ namespace YleAPI
 		private int _metaCount;
 		private List<ProgramInfo> _programInfos = new List<ProgramInfo>();
 		private ProgramDetailsInfo _programDetailsInfo;
+        private Coroutine _updateProgramDetailsInfoCoroutine;
+
+        public bool MessageProc(eMessage type, object value)
+        {
+            switch(type)
+            {
+                case eMessage.SearchButtonClick:
+                    {
+                        OnSearchButtonClick((string)value);                                          
+                        return true;
+                    }
+                case eMessage.SearchProgramViewEndDrag:
+                    {
+                        OnSearchProgramViewEndDrag();
+                        return true;
+                    }
+                case eMessage.SearchProgramItemClick:
+                    {                 
+                        OnSearchProgramItemClick((string)value);
+                        return true;
+                    }
+                case eMessage.ProgramViewBackButtonClick:
+                    {
+                        OnProgramViewBackButtonClick();
+                        return true;
+                    }
+                   
+            }
+
+            return false;
+        }
 		
 		void Awake()
 		{
+            MessageObjectManager.Instance.Add(eMessage.SearchButtonClick, this);
+            MessageObjectManager.Instance.Add(eMessage.SearchProgramViewEndDrag, this);
+            MessageObjectManager.Instance.Add(eMessage.SearchProgramItemClick, this);
+            MessageObjectManager.Instance.Add(eMessage.ProgramViewBackButtonClick, this);
+
 			_netClient = new NetClient ();
 		}
 		
@@ -45,60 +83,80 @@ namespace YleAPI
 			ShowProgramView (false);	
 		}
 
-		public void InitProgramInfos(string keyword)
-		{			
-			_keyword = keyword;
-			_offset = 0;
-			_metaCount = 0;
+        void Destroy()
+        {
+            MessageObjectManager.Instance.Remove(this);
+        }					        	
 
-			_programInfos.Clear ();
+        private void OnSearchButtonClick(string keyword)
+        {
+            _keyword = keyword;
+            _offset = 0;
+            _metaCount = 0;
 
-			var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
+            _programInfos.Clear ();
 
-			_programInfos.AddRange(programInfos);
+            var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
 
-			uiSearchProgramView.UpdateView (_programInfos);
-		}
+            _programInfos.AddRange(programInfos);
 
-		public void AppendProgramInfos()
-		{
-			if (_offset == _metaCount) 
-			{
-				return;
-			}
+            uiSearchProgramView.UpdateView (_programInfos);
+        }
 
-			var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
+        private void OnSearchProgramViewEndDrag()
+        {
+            if (_offset == _metaCount) 
+            {
+                return;
+            }
 
-			_programInfos.AddRange(programInfos);
+            var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
 
-			uiSearchProgramView.AppendView (programInfos);
-		}
+            _programInfos.AddRange(programInfos);
 
-		private void ShowSearchView(bool show)
-		{
-			uiSearchInputView.gameObject.SetActive (show);
-			uiSearchProgramView.gameObject.SetActive (show);
-		}
+            uiSearchProgramView.AppendView (programInfos);
+        }
 
-		private void ShowProgramView(bool show)
-		{
-			uiProgramView.gameObject.SetActive (show);
-		}
+        private void OnSearchProgramItemClick(string programID)
+        {   
+            if(_updateProgramDetailsInfoCoroutine != null)
+            {
+                StopCoroutine(_updateProgramDetailsInfoCoroutine);
+                _updateProgramDetailsInfoCoroutine = null;
+            }
 
-		public void UpdateProgramDetailsInfo(string programID)
-		{
-			ShowSearchView (false);
-			ShowProgramView (true);
+            _updateProgramDetailsInfoCoroutine = StartCoroutine(UpdatingProgramDetailsInfo(programID));     
+        }
 
-			_programDetailsInfo = _netClient.GetProgramDetailsByID (programID);
+        private void OnProgramViewBackButtonClick()
+        {
+            ShowSearchView (true);
+            ShowProgramView (false);    
+        }
 
-			uiProgramView.UpdateView (_programDetailsInfo);
-		}
+        private IEnumerator UpdatingProgramDetailsInfo(string programID)
+        {
+            _programDetailsInfo = new ProgramDetailsInfo();
 
-		public void OnProgramViewBackButtonClick()
-		{
-			ShowSearchView (true);
-			ShowProgramView (false);			
-		}
+            yield return StartCoroutine(_netClient.GetProgramDetailsByID (_programDetailsInfo, programID));
+
+            ShowSearchView (false);
+            ShowProgramView (true);
+
+            uiProgramView.UpdateView (_programDetailsInfo);
+
+            _updateProgramDetailsInfoCoroutine = null;
+        }   
+
+        private void ShowSearchView(bool show)
+        {
+            uiSearchInputView.gameObject.SetActive (show);
+            uiSearchProgramView.gameObject.SetActive (show);
+        }
+
+        private void ShowProgramView(bool show)
+        {
+            uiProgramView.gameObject.SetActive (show);
+        }
 	}
 }

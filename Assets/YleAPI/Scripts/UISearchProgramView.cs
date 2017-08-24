@@ -8,8 +8,7 @@ using UnityEngine.EventSystems;
 namespace YleAPI.UI
 {
 	public class UISearchProgramView : MonoBehaviour, IEndDragHandler
-	{
-		public MainScene parent;
+	{		
 		public GameObject searchProgramItemParent;
 		public GameObject searchProgramItemPrefab;
 		public ScrollRect scrollRect;
@@ -53,8 +52,7 @@ namespace YleAPI.UI
 					{					
 						UISearchProgramItem item = go.GetComponent<UISearchProgramItem> ();
 
-						item.transform.SetParent (searchProgramItemParent.transform);
-						item.parent = parent;
+						item.transform.SetParent (searchProgramItemParent.transform);						
 
 						searchProgramItems.Add (item);
 					}
@@ -64,10 +62,10 @@ namespace YleAPI.UI
 			for (int i = 0; i < programInfos.Count; ++i) 
 			{				
 				var item = searchProgramItems [i + startIndex];
-				int number = i + startIndex + 1;
+				//int number = i + startIndex + 1;
 
 				item.SetProgramID (programInfos [i].id);
-				item.uiTitle.text = "(" + number + ")" + programInfos [i].title;
+				item.uiTitle.text = programInfos [i].title;
 			}
 
 			bool scrollbarActive = searchProgramItems.Count > 0 ? true : false;
@@ -79,7 +77,7 @@ namespace YleAPI.UI
 		{	
 			if (scrollbar.value == 0) 
 			{
-				parent.AppendProgramInfos ();
+                MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchProgramViewEndDrag);
 			}
 		}
 	}

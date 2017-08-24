@@ -64,18 +64,18 @@ namespace YleAPI.Net
 			RequestAndResponse (ref resultString, _sb.ToString ());
 
 			JSONObject jsonResult = new JSONObject (resultString);
-			JSONObject jsonMeta = jsonResult ["meta"];
-			metaCount = (int)jsonMeta ["count"].i;
-			int limit = (int)jsonMeta ["limit"].i;
-			JSONObject jsonData = jsonResult ["data"];
-			List<JSONObject> jsonPrograms = jsonData.list;
+			JSONObject meta = jsonResult ["meta"];
+			metaCount = (int)meta ["count"].i;
+			int limit = (int)meta ["limit"].i;
+			JSONObject data = jsonResult ["data"];
+			List<JSONObject> programs = data.list;
 
-			if (jsonPrograms.Count == 0) 
+            if (programs.Count == 0) 
 			{
 				offset += limit;
 			}
 
-			foreach (var program in jsonPrograms) 
+            foreach (var program in programs) 
 			{
 				offset++;
 				
@@ -97,16 +97,34 @@ namespace YleAPI.Net
 					newInfo.title = title ["fi"].str;
                 }
 
+                if(title != null &&
+                    title ["fi"] != null) 
+                {                
+                    string[] titles = SplitTitle(ReplaceString(title ["fi"].str));
+
+                    if(titles != null)
+                    {
+                        if(titles.Length > 1)
+                        {
+                            newInfo.title = string.Format("{0} | {1}", titles[1], titles[0]);
+                        }
+                        else
+                        {
+                            newInfo.title = titles[0];
+                        }
+                    }
+                }
+
                 if(description != null &&
 					description ["fi"] != null) 
                 {
-					newInfo.description = description ["fi"].str;
+                    newInfo.description = ReplaceString(description ["fi"].str);
                 }
 
                 if(longDescription != null &&
 					longDescription ["fi"] != null)
                 {					
-					newInfo.longDescription = longDescription ["fi"].str;
+                    newInfo.longDescription = ReplaceString(longDescription ["fi"].str);
                 }
 
 				result.Add (newInfo);
@@ -122,9 +140,8 @@ namespace YleAPI.Net
 			return result;
 		}
 
-		public ProgramDetailsInfo GetProgramDetailsByID(string id)
-		{
-			ProgramDetailsInfo result = new ProgramDetailsInfo();
+        public IEnumerator GetProgramDetailsByID(ProgramDetailsInfo result, string id)
+		{			
 			string strUri = "https://external.api.yle.fi/v1/programs/items/";
 
 			_sb.Length = 0;
@@ -137,75 +154,73 @@ namespace YleAPI.Net
 			RequestAndResponse (ref resultString, _sb.ToString ());
 
 			JSONObject jsonResult = new JSONObject (resultString);
-			JSONObject jsonData = jsonResult ["data"];
-			JSONObject title = jsonData ["title"];
-			JSONObject description = jsonData ["description"];
-			JSONObject longDescription = jsonData ["longDescription"];
+            JSONObject data = jsonResult ["data"];
+            JSONObject title = data ["title"];
+            JSONObject description = data ["description"];
+            JSONObject longDescription = data ["longDescription"];
+            JSONObject image = data ["image"];
 
 			if(title != null &&
 				title ["fi"] != null) 
-			{
-				result.title = title ["fi"].str;
+			{                
+                string[] titles = SplitTitle(ReplaceString(title ["fi"].str));
+
+                if(titles.Length > 1)
+                {
+                    result.title1 = titles[0];
+                    result.title2 = titles[1];
+                }
+                else
+                {   
+                    result.title1 = null;
+                    result.title2 = titles[0];
+                }
 			}
 
 			if(description != null &&
 				description ["fi"] != null) 
-			{
-				result.description = description ["fi"].str;
+			{                
+                result.description = ReplaceString(description ["fi"].str);
 			}
 
 			if(longDescription != null &&
 				longDescription ["fi"] != null)
 			{					
-				result.longDescription = longDescription ["fi"].str;
+                result.longDescription = ReplaceString(longDescription ["fi"].str);
 			}
 
-			return result;
+            if(image != null)
+            {
+                string imageFormat = "jpg";
+                string imageUrl = string.Format("http://images.cdn.yle.fi/image/upload/{0}.{1}", image["id"].str, imageFormat);
+
+                WWW www = new WWW(imageUrl);
+
+                yield return www;
+
+                result.sprite = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));
+            }			
 		}
 
-		/*
-		public void GetService(ref string result, string serviceID)
-		{
-			string strUri = "https://external.api.yle.fi/v1/programs/services/";
+        private string ReplaceString(string str)
+        {            
+            return str.Replace("\\r\\n", "\r\n").Replace("\\\"", "\"");
+        }
 
-			_sb.Length = 0;
-			_sb.Append (strUri);
-			_sb.Append (serviceID);
-			_sb.Append (".json?");
-			_sb.Append (_authInfo);
+        private string[] SplitTitle(string src)
+        {
+            string seperator = ":";
+            char[] seperatorArray = seperator.ToCharArray();
+            string[] result = src.Split(seperatorArray, 2);
 
-			RequestAndResponse (ref result, _sb.ToString ());
+            if(result.Length > 1 && 
+                result[1] != null)
+            {                
+                result[1] = result[1].Trim();
+            }
 
-			JSONObject jsonResult = new JSONObject (result);
-
-			//Debug.Log (jsonResult.ToString ());
-		}
-		*/
-
-		public void GetServices(ref string result, string serviceType)
-		{
-			string strUri = "https://external.api.yle.fi/v1/programs/services.json?type=";
-
-			_sb.Length = 0;
-			_sb.Append (strUri);
-			_sb.Append (serviceType);
-			_sb.Append ("&");
-			_sb.Append (_authInfo);
-
-			//Debug.Log (_sb.ToString ());
-
-			RequestAndResponse (ref result, _sb.ToString ());
-
-			/*
-			JSONObject jsonResult = new JSONObject (result);
-			JSONObject jsonData = jsonResult ["data"];
-			List<JSONObject> jsonServices = jsonData.list;
-					
-			foreach (var service in jsonServices) 
-			{
-			}
-			*/
-		}
+            return result;
+        }		      
 
 		private bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{
@@ -268,6 +283,38 @@ namespace YleAPI.Net
 
 			return true;
 		}
+
+        /*
+        public void GetService(ref string result, string serviceID)
+        {
+            string strUri = "https://external.api.yle.fi/v1/programs/services/";
+
+            _sb.Length = 0;
+            _sb.Append (strUri);
+            _sb.Append (serviceID);
+            _sb.Append (".json?");
+            _sb.Append (_authInfo);
+
+            RequestAndResponse (ref result, _sb.ToString ());
+
+            JSONObject jsonResult = new JSONObject (result);
+
+            //Debug.Log (jsonResult.ToString ());
+        }
+        
+        public void GetServices(ref string result, string serviceType)
+        {
+            string strUri = "https://external.api.yle.fi/v1/programs/services.json?type=";
+
+            _sb.Length = 0;
+            _sb.Append (strUri);
+            _sb.Append (serviceType);
+            _sb.Append ("&");
+            _sb.Append (_authInfo);         
+
+            RequestAndResponse (ref result, _sb.ToString ());           
+        }
+        */
 
 		/*
 		string GetMediaURL(string id, string mediaID)
