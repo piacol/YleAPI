@@ -11,7 +11,8 @@ namespace YleAPI
 		public string id;
 		public string title;
 		public string description;
-		public string longDescription;
+		public string startTime;
+		public string type;
 	}
 
 	public class ProgramDetailsInfo
@@ -19,8 +20,13 @@ namespace YleAPI
         public string title1;      
 		public string title2;
 		public string description;
-		public string longDescription;
-        public Sprite sprite;
+        public Sprite image;
+		public int imageWidth;
+		public int imageHeight;
+		public string duration;
+		public string startTime;
+		public string type;
+		public string region;
 	}
 
 	public class MainScene : MonoBehaviour, IMessageObject

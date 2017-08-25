@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
+using System.Text;
 
 namespace YleAPI.UI
 {
@@ -12,12 +13,21 @@ namespace YleAPI.UI
 		public Image uiImage;
 		public Text uiDescription;
 		public Scrollbar uiScrollbar;
+		public Text uiDetails;
+
+		private LayoutElement _imageLayoutElement;
+		private StringBuilder _sb = new StringBuilder();
 
 		void Awake()
 		{
 			if (uiBackButton != null) 
 			{
 				uiBackButton.onClick.AddListener (OnBackButtonClick);
+			}
+
+			if (uiImage != null) 
+			{
+				_imageLayoutElement = uiImage.GetComponent<LayoutElement> ();
 			}
 		}
 
@@ -50,10 +60,15 @@ namespace YleAPI.UI
 
 			if (uiImage != null) 
 			{		
-                if(info.sprite != null)
+                if(info.image != null)
                 {
                     uiImage.gameObject.SetActive (true);
-                    uiImage.sprite = info.sprite;
+                    uiImage.sprite = info.image;
+
+					float height = (float)Screen.width * (float)info.imageHeight / (float)info.imageWidth;
+					int marginY = 15;
+
+					_imageLayoutElement.preferredHeight = (int)height + marginY;
                 }
                 else
                 {
@@ -64,6 +79,33 @@ namespace YleAPI.UI
 			if (uiDescription != null) 
 			{
 				uiDescription.text = info.description;
+			}
+
+			if (uiDetails != null) 
+			{
+				_sb.Length = 0;
+
+				if (string.IsNullOrEmpty (info.duration) == false) 
+				{
+					_sb.Append (info.duration);
+					_sb.Append (" | ");
+				}
+
+				if (string.IsNullOrEmpty (info.startTime) == false) 
+				{
+					_sb.Append (info.startTime);
+					_sb.Append (" | ");
+				}
+
+				if (string.IsNullOrEmpty (info.type) == false) 
+				{
+					_sb.Append (info.type);
+					_sb.Append (" | ");
+				}
+
+				_sb.Append (info.region);
+
+				uiDetails.text = _sb.ToString ();
 			}
 		}
 

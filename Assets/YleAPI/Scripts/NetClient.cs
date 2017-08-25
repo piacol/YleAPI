@@ -6,6 +6,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System;
+using YleAPI.Util;
 
 namespace YleAPI.Net
 {
@@ -55,10 +56,9 @@ namespace YleAPI.Net
 			//_sb.Append ("category=5-135&");
 			_sb.Append ("availability=ondemand&"); // available
 			_sb.Append ("contentprotection=22-0,22-1&"); // exclude drm protected
-			_sb.Append ("region=world&"); // exclude fi region
+			//_sb.Append ("region=world&"); // exclude fi region
 			_sb.Append ("language=fi&"); // exclude fi region
 			_sb.Append (_authInfo);
-			//Debug.Log (_sb.ToString ());
 
 			string resultString = null;
 			RequestAndResponse (ref resultString, _sb.ToString ());
@@ -86,7 +86,17 @@ namespace YleAPI.Net
 
 				JSONObject title = program ["title"];
 				JSONObject description = program ["description"];
-				JSONObject longDescription = program ["longDescription"];
+				JSONObject type = program ["type"];
+				List<JSONObject> publicationEvents = program ["publicationEvent"].list;
+				JSONObject publicationEvent = null;
+				JSONObject startTime = null;
+
+				if(publicationEvents.Count > 0)
+				{
+					publicationEvent = publicationEvents [0];
+					startTime = publicationEvent ["startTime"];
+				}
+
 				ProgramInfo newInfo = new ProgramInfo ();
 
 				newInfo.id = program ["id"].str;
@@ -100,7 +110,7 @@ namespace YleAPI.Net
                 if(title != null &&
                     title ["fi"] != null) 
                 {                
-                    string[] titles = SplitTitle(ReplaceString(title ["fi"].str));
+					string[] titles = Util_String.SplitTitle(Util_String.ReplaceString(title ["fi"].str));
 
                     if(titles != null)
                     {
@@ -118,14 +128,18 @@ namespace YleAPI.Net
                 if(description != null &&
 					description ["fi"] != null) 
                 {
-                    newInfo.description = ReplaceString(description ["fi"].str);
+					newInfo.description = Util_String.ReplaceString(description ["fi"].str);
                 }
 
-                if(longDescription != null &&
-					longDescription ["fi"] != null)
-                {					
-                    newInfo.longDescription = ReplaceString(longDescription ["fi"].str);
-                }
+				if(type != null)
+				{
+					newInfo.type = type.str;
+				}
+
+				if(startTime != null)
+				{
+					newInfo.startTime = Util_String.ToDisplayStartTime(startTime.str);
+				}
 
 				result.Add (newInfo);
 
@@ -141,7 +155,7 @@ namespace YleAPI.Net
 		}
 
         public IEnumerator GetProgramDetailsByID(ProgramDetailsInfo result, string id)
-		{			
+		{		
 			string strUri = "https://external.api.yle.fi/v1/programs/items/";
 
 			_sb.Length = 0;
@@ -156,14 +170,27 @@ namespace YleAPI.Net
 			JSONObject jsonResult = new JSONObject (resultString);
             JSONObject data = jsonResult ["data"];
             JSONObject title = data ["title"];
-            JSONObject description = data ["description"];
-            JSONObject longDescription = data ["longDescription"];
+            JSONObject description = data ["description"];            
             JSONObject image = data ["image"];
+			//JSONObject typeMedia = data ["typeMedia"];
+			JSONObject type = data ["type"];
+			JSONObject duration = data ["duration"];
+			List<JSONObject> publicationEvents = data ["publicationEvent"].list;
+			JSONObject publicationEvent = null;
+			JSONObject startTime = null;
+			JSONObject region = null;
+
+			if(publicationEvents.Count > 0)
+			{
+				publicationEvent = publicationEvents [0];
+				startTime = publicationEvent ["startTime"];
+				region = publicationEvent ["region"];
+			}
 
 			if(title != null &&
 				title ["fi"] != null) 
 			{                
-                string[] titles = SplitTitle(ReplaceString(title ["fi"].str));
+				string[] titles = Util_String.SplitTitle(Util_String.ReplaceString(title ["fi"].str));
 
                 if(titles.Length > 1)
                 {
@@ -180,13 +207,7 @@ namespace YleAPI.Net
 			if(description != null &&
 				description ["fi"] != null) 
 			{                
-                result.description = ReplaceString(description ["fi"].str);
-			}
-
-			if(longDescription != null &&
-				longDescription ["fi"] != null)
-			{					
-                result.longDescription = ReplaceString(longDescription ["fi"].str);
+				result.description = Util_String.ReplaceString(description ["fi"].str);
 			}
 
             if(image != null &&
@@ -200,29 +221,31 @@ namespace YleAPI.Net
 
                 yield return www;
 
-                result.sprite = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));
-            }			
-		}
-
-        private string ReplaceString(string str)
-        {            
-            return str.Replace("\\r\\n", "\r\n").Replace("\\\"", "\"");
-        }
-
-        private string[] SplitTitle(string src)
-        {
-            string seperator = ":";
-            char[] seperatorArray = seperator.ToCharArray();
-            string[] result = src.Split(seperatorArray, 2);
-
-            if(result.Length > 1 && 
-                result[1] != null)
-            {                
-                result[1] = result[1].Trim();
+                result.image = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));
+				result.imageWidth = www.texture.width;
+				result.imageHeight = www.texture.height;
             }
 
-            return result;
-        }		      
+			if(type != null)
+			{
+				result.type = type.str;
+			}
+
+			if(duration != null)
+			{
+				result.duration = Util_String.ToDisplayDuration(duration.str);
+			}
+
+			if(startTime != null)
+			{
+				result.startTime = Util_String.ToDisplayStartTime(startTime.str);
+			}
+
+			if(region != null)
+			{
+				result.region = region.str;
+			}
+		}        	      
 
 		private bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
 		{

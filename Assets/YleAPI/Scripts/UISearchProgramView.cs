@@ -62,10 +62,8 @@ namespace YleAPI.UI
 			for (int i = 0; i < programInfos.Count; ++i) 
 			{				
 				var item = searchProgramItems [i + startIndex];
-				//int number = i + startIndex + 1;
 
-				item.SetProgramID (programInfos [i].id);
-				item.uiTitle.text = programInfos [i].title;
+				item.UpdateItem (programInfos [i]);
 			}
 
 			bool scrollbarActive = searchProgramItems.Count > 0 ? true : false;
