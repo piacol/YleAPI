@@ -29,11 +29,21 @@ namespace YleAPI
 		public string region;
 	}
 
+	public class SearchProgramParameter
+	{		
+		public string keyword;
+		public int offset;
+		public int metaCount;
+		public int searchCount;
+		public List<ProgramInfo> programInfos = new List<ProgramInfo>();
+	}
+
 	public class MainScene : MonoBehaviour, IMessageObject
 	{
 		public UISearchInputView uiSearchInputView;
 		public UISearchProgramView uiSearchProgramView;
 		public UIProgramView uiProgramView;
+		public UIIndicatorView uiIndicatorView;
 		
 		private NetClient _netClient;
 		private string _keyword;
@@ -41,7 +51,9 @@ namespace YleAPI
 		private int _metaCount;
 		private List<ProgramInfo> _programInfos = new List<ProgramInfo>();
 		private ProgramDetailsInfo _programDetailsInfo;
-        private Coroutine _updateProgramDetailsInfoCoroutine;
+		private Coroutine _updatingProgramsCoroutine;
+		private Coroutine _appendingProgramsCoroutine;
+		private Coroutine _updatingProgramDetailsInfoCoroutine;
 
         public bool MessageProc(eMessage type, object value)
         {
@@ -66,8 +78,7 @@ namespace YleAPI
                     {
                         OnProgramViewBackButtonClick();
                         return true;
-                    }
-                   
+                    }                   
             }
 
             return false;
@@ -86,27 +97,33 @@ namespace YleAPI
 		void Start()
 		{
 			ShowSearchView (true);
-			ShowProgramView (false);	
+			ShowProgramView (false);
+			ShowIndicatorView (false);
 		}
 
         void Destroy()
         {
+			_netClient.Release ();
             MessageObjectManager.Instance.Remove(this);
-        }					        	
+        }	
 
         private void OnSearchButtonClick(string keyword)
         {
+			if (_updatingProgramsCoroutine != null) 
+			{
+				return;
+			}
+			
             _keyword = keyword;
             _offset = 0;
             _metaCount = 0;
-
             _programInfos.Clear ();
 
-            var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
+			SearchProgramParameter parameter = new SearchProgramParameter ();
 
-            _programInfos.AddRange(programInfos);
+			parameter.keyword = _keyword;
 
-            uiSearchProgramView.UpdateView (_programInfos);
+			_updatingProgramsCoroutine = StartCoroutine (UpdatingPrograms (parameter));
         }
 
         private void OnSearchProgramViewEndDrag()
@@ -116,22 +133,28 @@ namespace YleAPI
                 return;
             }
 
-            var programInfos = _netClient.GetPrograms (_keyword, ref _offset, ref _metaCount);
+			if (_appendingProgramsCoroutine != null) 
+			{
+				return;
+			}
 
-            _programInfos.AddRange(programInfos);
+			SearchProgramParameter parameter = new SearchProgramParameter ();
 
-            uiSearchProgramView.AppendView (programInfos);
+			parameter.keyword = _keyword;
+			parameter.offset = _offset;
+			parameter.metaCount = _metaCount;
+
+			_appendingProgramsCoroutine = StartCoroutine (AppendingPrograms (parameter));            
         }
 
         private void OnSearchProgramItemClick(string programID)
         {   
-            if(_updateProgramDetailsInfoCoroutine != null)
-            {
-                StopCoroutine(_updateProgramDetailsInfoCoroutine);
-                _updateProgramDetailsInfoCoroutine = null;
-            }
+			if (_updatingProgramDetailsInfoCoroutine != null) 
+			{
+				return;
+			}
 
-            _updateProgramDetailsInfoCoroutine = StartCoroutine(UpdatingProgramDetailsInfo(programID));     
+            _updatingProgramDetailsInfoCoroutine = StartCoroutine(UpdatingProgramDetailsInfo(programID));     
         }
 
         private void OnProgramViewBackButtonClick()
@@ -140,8 +163,58 @@ namespace YleAPI
             ShowProgramView (false);    
         }
 
+		private IEnumerator UpdatingPrograms(SearchProgramParameter parameter)
+		{
+			ShowIndicatorView (true);
+
+			yield return null;
+
+			int maxSearchCount = Constants.MaxSearchProgramCount;
+
+			do
+			{
+				yield return StartCoroutine(_netClient.GetPrograms(parameter, maxSearchCount));
+
+			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
+
+			_programInfos.AddRange(parameter.programInfos);
+
+			uiSearchProgramView.UpdateView (_programInfos);
+
+			_updatingProgramsCoroutine = null;
+
+			ShowIndicatorView (false);
+		}
+
+		private IEnumerator AppendingPrograms(SearchProgramParameter parameter)
+		{
+			ShowIndicatorView (true);
+
+			yield return null;
+
+			int maxSearchCount = Constants.MaxSearchProgramCount;
+
+			do
+			{
+				yield return StartCoroutine(_netClient.GetPrograms(parameter, maxSearchCount));
+
+			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
+
+			_programInfos.AddRange(parameter.programInfos);
+
+			uiSearchProgramView.AppendView (parameter.programInfos);
+
+			_appendingProgramsCoroutine = null;
+
+			ShowIndicatorView (false);
+		}
+
         private IEnumerator UpdatingProgramDetailsInfo(string programID)
         {
+			ShowIndicatorView (true);
+
+			yield return null;
+
             _programDetailsInfo = new ProgramDetailsInfo();
 
             yield return StartCoroutine(_netClient.GetProgramDetailsByID (_programDetailsInfo, programID));
@@ -151,7 +224,9 @@ namespace YleAPI
 
             uiProgramView.UpdateView (_programDetailsInfo);
 
-            _updateProgramDetailsInfoCoroutine = null;
+            _updatingProgramDetailsInfoCoroutine = null;
+
+			ShowIndicatorView (false);
         }   
 
         private void ShowSearchView(bool show)
@@ -164,5 +239,10 @@ namespace YleAPI
         {
             uiProgramView.gameObject.SetActive (show);
         }
+
+		private void ShowIndicatorView(bool show)
+		{
+			uiIndicatorView.gameObject.SetActive (show);
+		}
 	}
 }

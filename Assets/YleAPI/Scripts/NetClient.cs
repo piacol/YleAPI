@@ -1,15 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Text;
-using System.Net;
-using System.IO;
 using System.Collections.Generic;
 using System.Security.Cryptography;
 using System;
 using YleAPI.Util;
 
 namespace YleAPI.Net
-{
+{	
 	public class NetClient 
 	{
 		private const string _appID = "6b180ff5";
@@ -17,41 +15,30 @@ namespace YleAPI.Net
 		private const string _secretKey = "383ae543a87b5a03";
 		private string _authInfo;
 		private StringBuilder _sb = new StringBuilder();
+		private NetThread _netThread = new NetThread();
 
 		public NetClient()
-		{
-			ServicePointManager.ServerCertificateValidationCallback = new System.Net.Security.RemoteCertificateValidationCallback(AcceptAllCertifications);
-
+		{			
 			_authInfo = string.Format("app_id={0}&app_key={1}", _appID, _appKey);
 		}
 
-		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int metaCount, int maxSearchCount = Constants.MaxSearchProgramCount)
+		public void Release()
 		{
-			List<ProgramInfo> result = new List<ProgramInfo> ();
-			int searchCount = 0;
-
-			do
-			{
-				var list = GetPrograms(keyword, ref offset, ref metaCount, ref searchCount, maxSearchCount);
-
-				result.AddRange(list);
-
-			} while(offset < metaCount && searchCount < maxSearchCount);
-
-			return result;
+			_netThread.Release ();
 		}
 
-		public List<ProgramInfo> GetPrograms(string keyword, ref int offset, ref int metaCount, ref int searchCount, int maxSearchCount)
+		public IEnumerator GetPrograms(SearchProgramParameter parameter, int maxSearchCount)
 		{            
 			List<ProgramInfo> result = new List<ProgramInfo> ();
+
 			string strUri = "https://external.api.yle.fi/v1/programs/items.json?";
 			_sb.Length = 0;
 			_sb.Append (strUri);
             _sb.Append ("q=");
-            _sb.Append (keyword);
+            _sb.Append (parameter.keyword);
             _sb.Append ('&');
 			_sb.Append ("offset=");
-			_sb.Append (offset);
+			_sb.Append (parameter.offset);
 			_sb.Append ('&');
 			//_sb.Append ("category=5-135&");
 			_sb.Append ("availability=ondemand&"); // available
@@ -60,24 +47,35 @@ namespace YleAPI.Net
 			_sb.Append ("language=fi&"); // exclude fi region
 			_sb.Append (_authInfo);
 
+			string requestData = _sb.ToString ();
+
+			while(_netThread.Request(requestData) == false)
+			{
+				yield return null;
+			}
+
 			string resultString = null;
-			RequestAndResponse (ref resultString, _sb.ToString ());
+
+			while(_netThread.PopResponseData(ref resultString) == false)
+			{
+				yield return null;
+			}
 
 			JSONObject jsonResult = new JSONObject (resultString);
 			JSONObject meta = jsonResult ["meta"];
-			metaCount = (int)meta ["count"].i;
+			parameter.metaCount = (int)meta ["count"].i;
 			int limit = (int)meta ["limit"].i;
 			JSONObject data = jsonResult ["data"];
 			List<JSONObject> programs = data.list;
 
             if (programs.Count == 0) 
 			{
-				offset += limit;
+				parameter.offset += limit;
 			}
 
             foreach (var program in programs) 
 			{
-				offset++;
+				parameter.offset++;
 				
 				if (IsValidSubject (program ["subject"]) == false) 
 				{
@@ -143,15 +141,15 @@ namespace YleAPI.Net
 
 				result.Add (newInfo);
 
-				searchCount++;
+				parameter.searchCount++;
 
-				if (searchCount >= maxSearchCount) 
+				if (parameter.searchCount >= maxSearchCount) 
 				{
 					break;
 				}
 			}
 
-			return result;
+			parameter.programInfos.AddRange (result);
 		}
 
         public IEnumerator GetProgramDetailsByID(ProgramDetailsInfo result, string id)
@@ -164,8 +162,19 @@ namespace YleAPI.Net
 			_sb.Append (".json?");
 			_sb.Append (_authInfo);
 
+			string requestData = _sb.ToString ();
+
+			while(_netThread.Request(requestData) == false)
+			{
+				yield return null;
+			}
+
 			string resultString = null;
-			RequestAndResponse (ref resultString, _sb.ToString ());
+
+			while(_netThread.PopResponseData(ref resultString) == false)
+			{
+				yield return null;
+			}			
 
 			JSONObject jsonResult = new JSONObject (resultString);
             JSONObject data = jsonResult ["data"];
@@ -247,11 +256,6 @@ namespace YleAPI.Net
 			}
 		}        	      
 
-		private bool AcceptAllCertifications(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certification, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors)
-		{
-			return true;
-		}
-
 		private bool IsValidSubject(JSONObject subject)
 		{
 			List<JSONObject> subjects = subject.list;
@@ -289,22 +293,6 @@ namespace YleAPI.Net
 					return false;
 				}	
 			}
-
-			return true;
-		}
-
-		private bool RequestAndResponse(ref string result, string requestUriString)
-		{				
-			HttpWebRequest request = (HttpWebRequest)WebRequest.Create (requestUriString);
-			HttpWebResponse response = (HttpWebResponse)request.GetResponse();
-			Stream dataStream = response.GetResponseStream();
-			StreamReader reader = new StreamReader(dataStream, Encoding.UTF8);
-
-			result = reader.ReadToEnd();
-			Debug.Log ("(RequestAndResponse() - )" + result);
-
-			reader.Close ();
-			response.Close ();
 
 			return true;
 		}
