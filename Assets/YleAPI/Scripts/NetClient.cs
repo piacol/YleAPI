@@ -99,6 +99,9 @@ namespace YleAPI.Net
 
 				ProgramInfo newInfo = new ProgramInfo ();
 
+                newInfo.number = parameter.number;
+                parameter.number++;
+
 				newInfo.id = program ["id"].str;
 
                 if(title != null &&
@@ -233,9 +236,7 @@ namespace YleAPI.Net
 
                 yield return www;
 
-                result.image = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));
-				//result.imageWidth = www.texture.width;
-				//result.imageHeight = www.texture.height;
+                result.image = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));				
 
                 Resources.UnloadUnusedAssets();
             }
@@ -303,170 +304,5 @@ namespace YleAPI.Net
 
 			return true;
 		}
-
-        /*
-        public void GetService(ref string result, string serviceID)
-        {
-            string strUri = "https://external.api.yle.fi/v1/programs/services/";
-
-            _sb.Length = 0;
-            _sb.Append (strUri);
-            _sb.Append (serviceID);
-            _sb.Append (".json?");
-            _sb.Append (_authInfo);
-
-            RequestAndResponse (ref result, _sb.ToString ());
-
-            JSONObject jsonResult = new JSONObject (result);
-
-            //Debug.Log (jsonResult.ToString ());
-        }
-        
-        public void GetServices(ref string result, string serviceType)
-        {
-            string strUri = "https://external.api.yle.fi/v1/programs/services.json?type=";
-
-            _sb.Length = 0;
-            _sb.Append (strUri);
-            _sb.Append (serviceType);
-            _sb.Append ("&");
-            _sb.Append (_authInfo);         
-
-            RequestAndResponse (ref result, _sb.ToString ());           
-        }
-        */
-
-		/*
-		string GetMediaURL(string id, string mediaID)
-		{
-			string strUri = "https://external.api.yle.fi/v1/media/playouts.json?program_id=";
-
-			_sb.Length = 0;
-			_sb.Append (strUri);
-			_sb.Append (id);
-			_sb.Append ("&media_id=");
-			_sb.Append (mediaID);
-			_sb.Append ("&protocol=HLS&");
-			_sb.Append (_authInfo);
-
-			string tempResult = null;
-
-			RequestAndResponse (ref tempResult, _sb.ToString ());
-
-			JSONObject media = new JSONObject(tempResult);
-			JSONObject data = media["data"];
-			List<JSONObject> dataList = data.list;
-			string encryptedURL = null;
-
-			if(dataList.Count > 0)
-			{
-				JSONObject element = dataList[0];
-				encryptedURL = element["url"].str;
-
-				Debug.Log("(encryptedURL)" + encryptedURL);
-
-				return GetDecryptedMediaURL(encryptedURL);                
-			}
-
-			return null;
-		}
-
-		public static string Decrypt(string textToDecrypt, string key)
-		{
-			RijndaelManaged rijndaelCipher = new RijndaelManaged();
-			rijndaelCipher.Mode = CipherMode.CBC;
-			rijndaelCipher.Padding = PaddingMode.PKCS7;
-
-			rijndaelCipher.KeySize = 128;
-			rijndaelCipher.BlockSize = 128;
-			byte[] encryptedData = Convert.FromBase64String(textToDecrypt);
-			byte[] pwdBytes = Encoding.UTF8.GetBytes(key);
-			byte[] keyBytes = new byte[16];
-			int len = pwdBytes.Length;
-			if (len > keyBytes.Length)
-			{
-				len = keyBytes.Length;
-			}
-			Array.Copy(pwdBytes, keyBytes, len);
-			rijndaelCipher.Key = keyBytes;
-			rijndaelCipher.IV = keyBytes;
-			byte[] plainText = rijndaelCipher.CreateDecryptor().TransformFinalBlock(encryptedData, 0, encryptedData.Length);
-			return Encoding.UTF8.GetString(plainText);
-		}
-
-		public string GetDecryptedMediaURL(string encryptedURL)
-		{
-			byte[] encryptBytes = Convert.FromBase64String(encryptedURL);
-			RijndaelManaged rm = new RijndaelManaged();
-
-			rm.Mode = CipherMode.CBC;
-			rm.Padding = PaddingMode.PKCS7;
-			rm.KeySize = 128;
-
-			MemoryStream memoryStream = new MemoryStream(encryptBytes);
-			ICryptoTransform decryptor = rm.CreateDecryptor(Encoding.UTF8.GetBytes(_secretKey), Encoding.UTF8.GetBytes(_secretKey));
-			CryptoStream cryptosStream = new CryptoStream(memoryStream, decryptor, CryptoStreamMode.Read);
-			byte[] plainBytes = new byte[encryptBytes.Length];
-			int plainCount = cryptosStream.Read(plainBytes, 0, plainBytes.Length);
-			string plainString = Encoding.UTF8.GetString(plainBytes, 0, plainCount);
-
-			cryptosStream.Close();
-			memoryStream.Close();
-
-			return plainString;
-		}
-		*/
-		/*            
-            String secret = "this_is_your_secret";
-            String data = "this_is_the_url";
-            Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
-
-            byte[] baseDecoded = Base64.getDecoder().decode(data);
-            byte[] iv = Arrays.copyOfRange(baseDecoded, 0, 16);
-            byte[] msg = Arrays.copyOfRange(baseDecoded, 16, baseDecoded.length);
-
-            SecretKeySpec secretKeySpec = new SecretKeySpec(secret.getBytes("UTF-8"), "AES");
-            IvParameterSpec ivSpec = new IvParameterSpec(iv);
-
-            cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec);
-            byte[] resultBytes = cipher.doFinal(msg);
-            System.out.println(new String(resultBytes));         
-        */
-
-		// media
-		/*
-			JSONObject resultJson = new JSONObject(result);
-			JSONObject data = resultJson ["data"];
-			JSONObject publicationEvent = data ["publicationEvent"];
-			List<JSONObject> publicationEvents = publicationEvent.list;
-			JSONObject mediaID = null;
-
-			for (int i = 0; i < publicationEvents.Count; ++i) 
-			{
-				JSONObject pe = publicationEvents [i];
-
-				if (pe ["temporalStatus"].str != "currently" ||
-					pe ["type"].str != "OnDemandPublication") 
-				{
-					continue;
-				}
-
-				JSONObject media = pe ["media"];
-
-				if (media != null)
-				{		
-					mediaID = media ["id"];
-
-					Debug.Log ("(mediaID)" + mediaID);
-				}
-			}
-
-			if (mediaID != null) 
-			{
-                string resultMediaURL = GetMediaURL (programID, mediaID.str);	
-
-                Debug.Log ("(resultMediaURL)" + resultMediaURL);
-			}
-			*/
 	}
 }

@@ -2,10 +2,11 @@
 using System.Collections;
 using UnityEngine.UI;
 using System.Text;
+using UnityEngine.EventSystems;
 
 namespace YleAPI.UI
 {
-	public class UISearchProgramItem : MonoBehaviour 
+    public class UISearchProgramItem : MonoBehaviour
 	{		
 		public Button uiButton;
 		public Text uiTitle;
@@ -21,12 +22,14 @@ namespace YleAPI.UI
 		}
 
 		private void OnButtonClick()
-		{
-			MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchProgramItemClick, _programID);
-		}
+		{   
+        	MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchProgramItemClick, _programID);
+        }             
 
 		public void UpdateItem(ProgramInfo info)
 		{
+            gameObject.name += info.number;            
+
 			_programID = info.id;
 
 			if (uiTitle != null) 

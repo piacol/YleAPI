@@ -8,6 +8,7 @@ namespace YleAPI
 {
 	public class ProgramInfo
 	{
+        public int number;
 		public string id;
 		public string title;
 		public string description;
@@ -21,8 +22,6 @@ namespace YleAPI
 		public string title2;
 		public string description;
         public Sprite image;
-		//public int imageWidth;
-		//public int imageHeight;
 		public string duration;
 		public string startTime;
 		public string type;
@@ -31,6 +30,7 @@ namespace YleAPI
 
 	public class SearchProgramParameter
 	{		
+        public int number;
 		public string keyword;
 		public int offset;
 		public int metaCount;
@@ -46,6 +46,7 @@ namespace YleAPI
 		public UIIndicatorView uiIndicatorView;
 		
 		private NetClient _netClient;
+        private int _number;
 		private string _keyword;
 		private int _offset;
 		private int _metaCount;
@@ -54,6 +55,9 @@ namespace YleAPI
 		private Coroutine _updatingProgramsCoroutine;
 		private Coroutine _appendingProgramsCoroutine;
 		private Coroutine _updatingProgramDetailsInfoCoroutine;
+        private int _beginOffsetIndex;
+        private int _endOffsetIndex;
+        private List<ProgramInfo> _cachedProgramInfos = new List<ProgramInfo>();
 
         public bool MessageProc(eMessage type, object value)
         {
@@ -64,9 +68,14 @@ namespace YleAPI
                         OnSearchButtonClick((string)value);                                          
                         return true;
                     }
-                case eMessage.SearchProgramViewEndDrag:
+                case eMessage.SearchProgramViewAppend:
                     {
-                        OnSearchProgramViewEndDrag();
+                        OnSearchProgramViewAppend();
+                        return true;
+                    }
+                case eMessage.SearchProgramViewPrepend:
+                    {
+                        OnSearchProgramViewPrepend();
                         return true;
                     }
                 case eMessage.SearchProgramItemClick:
@@ -87,7 +96,8 @@ namespace YleAPI
 		void Awake()
 		{
             MessageObjectManager.Instance.Add(eMessage.SearchButtonClick, this);
-            MessageObjectManager.Instance.Add(eMessage.SearchProgramViewEndDrag, this);
+            MessageObjectManager.Instance.Add(eMessage.SearchProgramViewAppend, this);
+            MessageObjectManager.Instance.Add(eMessage.SearchProgramViewPrepend, this);
             MessageObjectManager.Instance.Add(eMessage.SearchProgramItemClick, this);
             MessageObjectManager.Instance.Add(eMessage.ProgramViewBackButtonClick, this);
 
@@ -114,47 +124,117 @@ namespace YleAPI
 				return;
 			}
 			
+            _number = 1;
             _keyword = keyword;
             _offset = 0;
             _metaCount = 0;
+            _beginOffsetIndex = 0;
+            _endOffsetIndex = 0;
             _programInfos.Clear ();
 
 			SearchProgramParameter parameter = new SearchProgramParameter ();
 
 			parameter.keyword = _keyword;
+            parameter.number = 1;
 
 			_updatingProgramsCoroutine = StartCoroutine (UpdatingPrograms (parameter));
         }
 
-        private void OnSearchProgramViewEndDrag()
+        private void OnSearchProgramViewAppend()
         {
-            if(_programInfos.Count == 0)
-            {
-                return;
-            }
-            
-            if (_offset == _metaCount) 
+            if(_programInfos.Count == 0 ||                
+                _appendingProgramsCoroutine != null)
             {
                 return;
             }
 
-			if (_appendingProgramsCoroutine != null) 
-			{
-				return;
-			}
+            if(_endOffsetIndex == _programInfos.Count)
+            {
+                if(_offset == _metaCount)
+                {
+                    return;
+                }
 
-			SearchProgramParameter parameter = new SearchProgramParameter ();
+                SearchProgramParameter parameter = new SearchProgramParameter ();
 
-			parameter.keyword = _keyword;
-			parameter.offset = _offset;
-			parameter.metaCount = _metaCount;
+                parameter.number = _number;
+                parameter.keyword = _keyword;
+                parameter.offset = _offset;
+                parameter.metaCount = _metaCount;
 
-			_appendingProgramsCoroutine = StartCoroutine (AppendingPrograms (parameter));            
+                _appendingProgramsCoroutine = StartCoroutine (AppendingPrograms (parameter));            
+            }
+            else
+            {   
+                int count;
+                int startIndex = _endOffsetIndex;
+                
+                if(_endOffsetIndex + Constants.MaxSearchProgramCount < _programInfos.Count)
+                {
+                    _beginOffsetIndex += Constants.MaxSearchProgramCount;
+                    _endOffsetIndex += Constants.MaxSearchProgramCount;
+                    count = Constants.MaxSearchProgramCount;
+                }
+                else
+                {
+                    count = _programInfos.Count - _endOffsetIndex;
+                    _endOffsetIndex = _programInfos.Count;
+                    _beginOffsetIndex += count;                    
+                }
+
+                _cachedProgramInfos.Clear();
+
+                for(int i = 0; i < count; ++i)
+                {
+                    _cachedProgramInfos.Add(_programInfos[startIndex + i]);
+                }
+
+                uiSearchProgramView.AppendView (_cachedProgramInfos);                
+
+                //Debug.Log("(OnSearchProgramViewAppend() - (_beginOffset)" + _beginOffsetIndex + "(_endOffset)" + _endOffsetIndex);
+            }
+        }
+
+        private void OnSearchProgramViewPrepend()
+        {
+            if(_programInfos.Count == 0 ||
+                _beginOffsetIndex == 0)
+            {
+                return;
+            }
+
+            int count;
+
+            if(_beginOffsetIndex >= Constants.MaxSearchProgramCount)
+            {
+                _beginOffsetIndex -= Constants.MaxSearchProgramCount;
+                _endOffsetIndex -= Constants.MaxSearchProgramCount;
+                count = Constants.MaxSearchProgramCount;
+            }
+            else
+            {
+                count = _beginOffsetIndex;
+                _endOffsetIndex -= _beginOffsetIndex;
+                _beginOffsetIndex = 0;
+
+            }
+
+            _cachedProgramInfos.Clear();
+
+            for(int i = 0; i < count; ++i)
+            {
+                _cachedProgramInfos.Add(_programInfos[_beginOffsetIndex + i]);
+            }
+
+            uiSearchProgramView.PrependView (_cachedProgramInfos);
+
+            //Debug.Log("(OnSearchProgramViewPrepend() - (_beginOffset)" + _beginOffsetIndex + "(_endOffset)" + _endOffsetIndex);
         }
 
         private void OnSearchProgramItemClick(string programID)
         {   
-			if (_updatingProgramDetailsInfoCoroutine != null) 
+			if (_updatingProgramDetailsInfoCoroutine != null ||
+                _appendingProgramsCoroutine != null)
 			{
 				return;
 			}
@@ -182,9 +262,12 @@ namespace YleAPI
 
 			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
 
+            _number = parameter.number;
             _offset = parameter.offset;
             _metaCount = parameter.metaCount;
 			_programInfos.AddRange(parameter.programInfos);
+            _beginOffsetIndex = 0;
+            _endOffsetIndex = _programInfos.Count;
 
 			uiSearchProgramView.UpdateView (_programInfos);
 
@@ -216,17 +299,23 @@ namespace YleAPI
 
 			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
 
+            _number = parameter.number;
             _offset = parameter.offset;
             _metaCount = parameter.metaCount;
 			_programInfos.AddRange(parameter.programInfos);
+            _beginOffsetIndex = Mathf.Max(0, _programInfos.Count - Constants.MaxSearchProgramBufferCount);
+            _endOffsetIndex = _programInfos.Count;
 
 			uiSearchProgramView.AppendView (parameter.programInfos);
+
+            // to prevent from clicking button after appending programs.
+            yield return new WaitForSeconds(0.5f);
 
 			_appendingProgramsCoroutine = null;
 
             ShowIndicatorView (false);
 
-            Debug.Log("(AppendingPrograms()) - (programCount)" + _programInfos.Count);
+            //Debug.Log("(AppendingPrograms()) - (programCount)" + _programInfos.Count + "(_beginOffset)" + _beginOffsetIndex + "(_endOffset)" + _endOffsetIndex + "(Time.time)" + Time.time);
 		}
 
         private IEnumerator UpdatingProgramDetailsInfo(string programID)

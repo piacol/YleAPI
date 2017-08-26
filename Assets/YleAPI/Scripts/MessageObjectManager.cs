@@ -8,7 +8,8 @@ namespace YleAPI
     {
         None = -1,
         SearchButtonClick,
-        SearchProgramViewEndDrag,
+        SearchProgramViewAppend,
+        SearchProgramViewPrepend,
         SearchProgramItemClick,
         ProgramViewBackButtonClick,
 
