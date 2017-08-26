@@ -5,7 +5,7 @@ using System.Text;
 
 namespace YleAPI.UI
 {
-	public class UIProgramView : MonoBehaviour 
+    public class UIProgramView : MonoBehaviour 
 	{		
 		public Button uiBackButton;
 		public Text uiTitle1;
@@ -17,6 +17,8 @@ namespace YleAPI.UI
 
 		private LayoutElement _imageLayoutElement;
 		private StringBuilder _sb = new StringBuilder();
+        private int _screenWidth;
+        private int _screenHeight;
 
 		void Awake()
 		{
@@ -29,11 +31,21 @@ namespace YleAPI.UI
 			{
 				_imageLayoutElement = uiImage.GetComponent<LayoutElement> ();
 			}
+
+            _screenWidth = Screen.width;
+            _screenHeight = Screen.height;
 		}
 
-		void Start()
-		{			
-		}
+        void Update()
+        {
+            if(_screenWidth != Screen.width || _screenHeight != Screen.height)
+            {
+                _screenWidth = Screen.width;
+                _screenHeight = Screen.height;   
+
+                UpdateImageLayoutElement();
+            }
+        }
 
 		public void UpdateView(ProgramDetailsInfo info)
 		{			
@@ -65,10 +77,7 @@ namespace YleAPI.UI
                     uiImage.gameObject.SetActive (true);
                     uiImage.sprite = info.image;
 
-					float height = (float)Screen.width * (float)info.imageHeight / (float)info.imageWidth;
-					int marginY = 15;
-
-					_imageLayoutElement.preferredHeight = (int)height + marginY;
+                    UpdateImageLayoutElement();
                 }
                 else
                 {
@@ -112,6 +121,21 @@ namespace YleAPI.UI
 		private void OnBackButtonClick()
 		{
             MessageObjectManager.Instance.SendMessageToAll(eMessage.ProgramViewBackButtonClick);
-		}
+		}       
+
+        private void UpdateImageLayoutElement()
+        {
+            if(uiImage == null ||
+                uiImage.sprite == null ||
+                _imageLayoutElement == null)
+            {
+                return;
+            }
+            
+            float height = (float)Screen.width * (float)uiImage.sprite.texture.height / (float)uiImage.sprite.texture.width;
+            int marginY = 15;
+
+            _imageLayoutElement.preferredHeight = (int)height + marginY;
+        }
 	}
 }

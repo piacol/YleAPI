@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 
 namespace YleAPI.UI
 {
-	public class UISearchProgramView : MonoBehaviour, IEndDragHandler
+	public class UISearchProgramView : MonoBehaviour
 	{		
 		public GameObject searchProgramItemParent;
 		public GameObject searchProgramItemPrefab;
@@ -15,9 +15,12 @@ namespace YleAPI.UI
 		public Scrollbar scrollbar;
 
 		private List<UISearchProgramItem> searchProgramItems = new List<UISearchProgramItem>();
+        private float _maxScrollValueForAppendingItems;
+        private float _lastScrollValue = 0;
 
 		void Awake()
-		{			
+		{
+            scrollbar.onValueChanged.AddListener(OnScroll);
 		}
 
 		void Start()
@@ -69,14 +72,28 @@ namespace YleAPI.UI
 			bool scrollbarActive = searchProgramItems.Count > 0 ? true : false;
 
 			scrollbar.gameObject.SetActive (scrollbarActive);
-		}
 
-		public void OnEndDrag(PointerEventData data)
-		{	
-			if (scrollbar.value == 0) 
-			{
+            _maxScrollValueForAppendingItems = 1 - (float)(searchProgramItems.Count - 3) / (float)searchProgramItems.Count;
+		}     
+
+        private void OnScroll(float value)
+        {
+            if(value < _lastScrollValue)
+            {       
+                return;
+            }
+            else
+            {
+                _lastScrollValue = 0;
+            }
+            
+            if (value < _maxScrollValueForAppendingItems)
+            {      
+                _lastScrollValue = value;
+                _maxScrollValueForAppendingItems = 0; 
+
                 MessageObjectManager.Instance.SendMessageToAll(eMessage.SearchProgramViewEndDrag);
-			}
-		}
+            }
+        }
 	}
 }

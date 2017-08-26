@@ -52,14 +52,25 @@ namespace YleAPI.Net
 
 			lock (this) 
 			{			
-				result = _reponseData;
-
-				_requestData = null;
-				_reponseData = null;
+				result = _reponseData;				
 			}
 
 			return true;
 		}
+
+        public void FinishResponse()
+        {
+            if(_requestData == null || _reponseData == null)
+            {
+                return;                
+            }
+
+            lock (this) 
+            {           
+                _requestData = null;
+                _reponseData = null;            
+            }
+        }
 
 		private void ThreadUpdate()
 		{
@@ -72,11 +83,11 @@ namespace YleAPI.Net
 					{				
 						RequestAndResponse(ref _reponseData, _requestData);
 
-						Thread.Sleep(100);
+						Thread.Sleep(500);
 					}
 				}
 
-				Thread.Sleep(100);
+				Thread.Sleep(500);
 
 			}while(_threadExit == false);			
 		}
@@ -89,7 +100,7 @@ namespace YleAPI.Net
 			StreamReader reader = new StreamReader(dataStream, Encoding.UTF8);
 
 			result = reader.ReadToEnd();
-			Debug.Log ("(RequestAndResponse() - )" + result);
+			//Debug.Log ("(RequestAndResponse() - )" + result);
 
 			reader.Close ();
 			response.Close ();

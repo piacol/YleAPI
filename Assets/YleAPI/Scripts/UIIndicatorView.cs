@@ -3,50 +3,95 @@ using System.Collections;
 using UnityEngine.UI;
 
 namespace YleAPI.UI
-{
+{    
 	public class UIIndicatorView : MonoBehaviour 
 	{		
+        public enum Mode
+        {            
+            Networking,
+            LogMessage,
+        }
+
 		public Text uiIndicator;
-
-		private const float _delayTime = 0.5f;
-		private float _time = 0;
+        		
 		private string[] _displayTexts = { "Networking", "Networking.", "Networking..", "Networking..."};
-		private int _displayIndex = 0;
+        private Mode _mode = Mode.Networking;
+        private string _logMessage;
 
-		void OnEnable()
-		{
-			_time = 0;
-			_displayIndex = 0;
+        public void Show(bool show, UIIndicatorView.Mode mode, string logMessage)
+        {
+            gameObject.SetActive(show);
 
-			UpdateIndicatorText ();
-		}
+            _mode = mode;
+            _logMessage = logMessage;
 
-		void Start()
-		{
-			UpdateIndicatorText ();
-		}
+            StopAllCoroutines();
 
-		void Update()
-		{
-			_time += Time.deltaTime;
+            if(show == true)
+            {
+                if(_mode == Mode.Networking)
+                {
+                    StartCoroutine(ShowingNetworking());
+                }
+                else
+                {
+                    StartCoroutine(ShowingLogMessage());
+                }
+            }
+        }
 
-			if (_time > _delayTime) 
-			{
-				_time -= _delayTime;
+        private IEnumerator ShowingNetworking()
+        {
+            float time = 0;
+            float duration = 0.5f;
+            int displayIndex = 0;
 
-				_displayIndex++;
-				_displayIndex %= _displayTexts.Length;
+            if (uiIndicator != null) 
+            {
+                uiIndicator.text = _displayTexts [displayIndex];           
+            }
 
-				UpdateIndicatorText ();
-			}
-		}
+            do
+            {
+                yield return null;                
 
-		void UpdateIndicatorText()
-		{
-			if (uiIndicator != null) 
-			{
-				uiIndicator.text = _displayTexts [_displayIndex];			
-			}
-		}
+                time += Time.deltaTime;
+
+                if (time > duration) 
+                {
+                    time -= duration;
+
+                    displayIndex++;
+                    displayIndex %= _displayTexts.Length;
+
+                    if (uiIndicator != null) 
+                    {
+                        uiIndicator.text = _displayTexts [displayIndex];           
+                    }
+                }
+
+            }while(true);
+        }
+
+        private IEnumerator ShowingLogMessage()
+        {
+            float time = 0;
+            float duration = 3;
+
+            if (uiIndicator != null) 
+            {
+                uiIndicator.text = _logMessage;
+            }
+
+            do
+            {
+                yield return null;                
+
+                time += Time.deltaTime;
+
+            }while(time < duration);
+
+            gameObject.SetActive(false);
+        }
 	}
 }

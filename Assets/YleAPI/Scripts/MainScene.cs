@@ -21,8 +21,8 @@ namespace YleAPI
 		public string title2;
 		public string description;
         public Sprite image;
-		public int imageWidth;
-		public int imageHeight;
+		//public int imageWidth;
+		//public int imageHeight;
 		public string duration;
 		public string startTime;
 		public string type;
@@ -128,6 +128,11 @@ namespace YleAPI
 
         private void OnSearchProgramViewEndDrag()
         {
+            if(_programInfos.Count == 0)
+            {
+                return;
+            }
+            
             if (_offset == _metaCount) 
             {
                 return;
@@ -177,13 +182,24 @@ namespace YleAPI
 
 			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
 
+            _offset = parameter.offset;
+            _metaCount = parameter.metaCount;
 			_programInfos.AddRange(parameter.programInfos);
 
 			uiSearchProgramView.UpdateView (_programInfos);
 
 			_updatingProgramsCoroutine = null;
 
-			ShowIndicatorView (false);
+            if(parameter.searchCount != 0)
+            {
+                ShowIndicatorView (false);
+            }
+            else
+            {
+                ShowIndicatorView (true, UIIndicatorView.Mode.LogMessage, "No results found.");
+            }
+
+            Resources.UnloadUnusedAssets();
 		}
 
 		private IEnumerator AppendingPrograms(SearchProgramParameter parameter)
@@ -200,13 +216,17 @@ namespace YleAPI
 
 			} while(parameter.offset < parameter.metaCount && parameter.searchCount < maxSearchCount);
 
+            _offset = parameter.offset;
+            _metaCount = parameter.metaCount;
 			_programInfos.AddRange(parameter.programInfos);
 
 			uiSearchProgramView.AppendView (parameter.programInfos);
 
 			_appendingProgramsCoroutine = null;
 
-			ShowIndicatorView (false);
+            ShowIndicatorView (false);
+
+            Debug.Log("(AppendingPrograms()) - (programCount)" + _programInfos.Count);
 		}
 
         private IEnumerator UpdatingProgramDetailsInfo(string programID)
@@ -240,9 +260,9 @@ namespace YleAPI
             uiProgramView.gameObject.SetActive (show);
         }
 
-		private void ShowIndicatorView(bool show)
+        private void ShowIndicatorView(bool show, UIIndicatorView.Mode mode = UIIndicatorView.Mode.Networking, string logMessage = null)
 		{
-			uiIndicatorView.gameObject.SetActive (show);
+            uiIndicatorView.Show(show, mode, logMessage);
 		}
 	}
 }

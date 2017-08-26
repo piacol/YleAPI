@@ -61,6 +61,8 @@ namespace YleAPI.Net
 				yield return null;
 			}
 
+            _netThread.FinishResponse();
+
 			JSONObject jsonResult = new JSONObject (resultString);
 			JSONObject meta = jsonResult ["meta"];
 			parameter.metaCount = (int)meta ["count"].i;
@@ -222,17 +224,20 @@ namespace YleAPI.Net
             if(image != null &&
                 image.Count > 0 &&
                 image["id"] != null)
-            {
+            {                
+                int size = Screen.width;                
                 string imageFormat = "jpg";
-                string imageUrl = string.Format("http://images.cdn.yle.fi/image/upload/{0}.{1}", image["id"].str, imageFormat);
+                string imageUrl = string.Format("http://images.cdn.yle.fi/image/upload/w_{0},h_{1},c_fit/{2}.{3}", size, size, image["id"].str, imageFormat);
 
                 WWW www = new WWW(imageUrl);
 
                 yield return www;
 
                 result.image = Sprite.Create(www.texture, new Rect(0, 0, www.texture.width, www.texture.height), new Vector2(0, 0));
-				result.imageWidth = www.texture.width;
-				result.imageHeight = www.texture.height;
+				//result.imageWidth = www.texture.width;
+				//result.imageHeight = www.texture.height;
+
+                Resources.UnloadUnusedAssets();
             }
 
 			if(type != null)
@@ -254,6 +259,8 @@ namespace YleAPI.Net
 			{
 				result.region = region.str;
 			}
+
+            _netThread.FinishResponse();
 		}        	      
 
 		private bool IsValidSubject(JSONObject subject)
